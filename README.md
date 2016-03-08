@@ -65,7 +65,12 @@ This was developed with Microsoft Visual Studio Community 2015 on Windows 10.
 I don't know if it will work with Mono on Linux.
 
 To test it yourself, download the project, open it with Visual Studio, and
-hit Ctrl-Shift-B to build everything.  There are three projects:
+hit Ctrl-Shift-B to build the main app and the plugin assembly.  Hit F5 to
+run the tests in the debugger.  Uncaught exceptions in either AppDomain will
+be caught by the debugger, and exceptions will be serialized across the
+AppDomain boundary.
+
+There are three projects:
 
  1. The main project (which includes the DomainManager, the Sponsor wrapper,
     and three increasingly complex test programs).
@@ -73,10 +78,6 @@ hit Ctrl-Shift-B to build everything.  There are three projects:
     implementation of PluginLoader.
  3. ScriptPlugin, an implementation of IPlugin that knows how to compile
     C# code.
-
-Once built, hit F5 to run in the debugger.  Uncaught exceptions in either
-AppDomain will be handled correctly, and exceptions will be serialized
-across the AppDomain boundary.
 
 Most build settings are at their defaults, but the ScriptPlugin project's
 output directory is set to a subdirectory of the main project.  The
@@ -114,8 +115,7 @@ When figuring out how to make this work, the following pages were invaluable:
 
 Related technologies:
 
+ - [.NET AddIn](https://msdn.microsoft.com/en-us/library/bb788290(v=vs.110).aspx)
  - [Windows Communication Foundation](https://msdn.microsoft.com/en-us/library/ms731082(v=vs.110).aspx)
 (WCF)
-- [.NET AddIn](https://msdn.microsoft.com/en-us/library/bb788290(v=vs.110).aspx)
-- [CS-Script](http://www.csscript.net/)
-
+ - [CS-Script](http://www.csscript.net/)
