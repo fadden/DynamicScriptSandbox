@@ -88,7 +88,8 @@ I tried to make the sandboxing as restrictive as possible, but it appears
 that the use of the compiler requires full trust.  If you just want to
 execute previously-built code, you can severely limit the plugin's
 capabilities, e.g. disallow all disk access except for read-only access
-to the plugin directory.
+to the plugin directory.  The right answer is probably to assemble the
+code to a temp file in a trusted AppDomain, and execute it in another.
 
 
 ### License ###
