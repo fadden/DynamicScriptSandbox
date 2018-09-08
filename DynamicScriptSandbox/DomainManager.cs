@@ -97,8 +97,13 @@ namespace DynamicScriptSandbox {
                 permSet.AddPermission(new SecurityPermission(
                     SecurityPermissionFlag.Execution));
 
+                // This appears to be necessary to allow the lease renewal
+                // to work.  Without this the lease silently fails to renew.
+                permSet.AddPermission(new SecurityPermission(
+                    SecurityPermissionFlag.Infrastructure));
+
                 // Allow changes to Remoting stuff.  Without this, we can't
-                // register our ISponsor.  TODO: figure out if there's a better way.
+                // register our ISponsor.
                 permSet.AddPermission(new SecurityPermission(
                     SecurityPermissionFlag.RemotingConfiguration));
 
@@ -121,7 +126,8 @@ namespace DynamicScriptSandbox {
             //    AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
 
             // Create the AppDomain.  We're not passing in Evidence or
-            // StrongName[].  Not sure that's important.
+            // StrongName[].  The latter requires signing the plugin DLL
+            // with a keypair.
             mAppDomain = AppDomain.CreateDomain("Plugin AppDomain",
                 null, adSetup, permSet);
 
@@ -141,15 +147,34 @@ namespace DynamicScriptSandbox {
         /// <summary>
         /// Destroy the AppDomain.
         /// </summary>
-        private void DestroyDomain() {
+        private void DestroyDomain(bool disposing) {
             Console.WriteLine("Unloading AppDomain '" +
-                mAppDomain.FriendlyName + "', id=" + mAppDomain.Id);
+                mAppDomain.FriendlyName + "', id=" + mAppDomain.Id +
+                ", disposing=" + disposing);
             if (mPluginLoader != null) {
                 mPluginLoader.Dispose();
                 mPluginLoader = null;
             }
             if (mAppDomain != null) {
-                AppDomain.Unload(mAppDomain);
+                // We can't simply invoke AppDomain.Unload() from a finalizer.
+                // The unload is handled by a thread that won't run at the
+                // same time as the finalizer thread, so if we got here
+                // through finalization we will deadlock.  Fortunately the
+                // runtime sees the situation and throws an exception out of
+                // Unload().
+                //
+                // If we don't have a finalizer, and we forget to make an
+                // explicit cleanup call, the AppDomain will stick around.
+                //
+                // So we use a workaround from
+                // https://stackoverflow.com/q/4064749/294248 and invoke it
+                // asynchronously.
+                if (disposing) {
+                    AppDomain.Unload(mAppDomain);
+                } else {
+                    new Action<AppDomain>(AppDomain.Unload).BeginInvoke(
+                        mAppDomain, null, null);
+                }
                 mAppDomain = null;
             }
         }
@@ -184,6 +209,8 @@ namespace DynamicScriptSandbox {
         /// Finalizer.  Required for IDisposable.
         /// </summary>
         ~DomainManager() {
+            Console.WriteLine("WARNING: DomainManager finalizer running (id=" +
+                (mAppDomain != null ? mAppDomain.Id.ToString() : "--") + ")");
             Dispose(false);
         }
 
@@ -214,11 +241,10 @@ namespace DynamicScriptSandbox {
 
             // free unmanaged objects
             if (mAppDomain != null) {
-                DestroyDomain();
+                DestroyDomain(disposing);
             }
 
             mDisposed = true;
         }
     }
-
 }

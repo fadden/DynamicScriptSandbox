@@ -17,6 +17,8 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Remoting.Lifetime;
+using System.Security.Permissions;
 
 namespace PluginCommon {
 
@@ -108,6 +110,40 @@ namespace PluginCommon {
                 // Each call to the remote object extends the lease so that
                 // it has at least this much time left.
                 lease.RenewOnCallTime = TimeSpan.FromSeconds(2);
+            }
+            return lease;
+        }
+#endif
+#if false
+        // Same as the above, but with reflection.  Use this if your library
+        // is based on netstandard rather than Win platform, as the .net
+        // standard lib doesn't include the Remoting classes.
+        [System.Security.SecurityCritical]
+        public override object InitializeLifetimeService() {
+            object lease = base.InitializeLifetimeService();
+
+            // netstandard2.0 doesn't have System.Runtime.Remoting.Lifetime, so use reflection
+            PropertyInfo leaseState = lease.GetType().GetProperty("CurrentState");
+            PropertyInfo initialLeaseTime = lease.GetType().GetProperty("InitialLeaseTime");
+            PropertyInfo sponsorshipTimeout = lease.GetType().GetProperty("SponsorshipTimeout");
+            PropertyInfo renewOnCallTime = lease.GetType().GetProperty("RenewOnCallTime");
+
+            Console.WriteLine("Default lease: ini=" +
+                initialLeaseTime.GetValue(lease) + " spon=" +
+                sponsorshipTimeout.GetValue(lease) + " renOC=" +
+                renewOnCallTime.GetValue(lease));
+
+            if ((int)leaseState.GetValue(lease) == 1 /*LeaseState.Initial*/) {
+                // Initial lease duration.
+                initialLeaseTime.SetValue(lease, TimeSpan.FromSeconds(8));
+
+                // How long we will wait for the sponsor to respond
+                // with a lease renewal time.
+                sponsorshipTimeout.SetValue(lease, TimeSpan.FromSeconds(5));
+
+                // Each call to the remote object extends the lease so that
+                // it has at least this much time left.
+                renewOnCallTime.SetValue(lease, TimeSpan.FromSeconds(2));
             }
             return lease;
         }

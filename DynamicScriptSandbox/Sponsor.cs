@@ -62,7 +62,7 @@ namespace DynamicScriptSandbox {
         }
 
         public Sponsor(T obj) {
-            mObj = (T)obj;
+            mObj = obj;
 
             // Get the lifetime service lease from the MarshalByRefObject,
             // and register ourselves as a sponsor.
@@ -79,7 +79,8 @@ namespace DynamicScriptSandbox {
                                 Flags=SecurityPermissionFlag.Infrastructure)]
         TimeSpan ISponsor.Renewal(ILease lease) {
             DateTime now = DateTime.Now;
-            Console.WriteLine("Lease renewal for " + mObj + ", last renewed " +
+            Console.WriteLine(DateTime.Now.ToString("HH:mm:ss") +
+                "|Lease renewal for " + mObj + ", last renewed " +
                 (now - mLastRenewal) + " sec ago (id=" +
                 AppDomain.CurrentDomain.Id + ")");
             mLastRenewal = now;
@@ -87,6 +88,7 @@ namespace DynamicScriptSandbox {
             if (mDisposed) {
                 // Shouldn't happen -- we should be unregistered -- but I
                 // don't know if multiple threads are involved.
+                Console.WriteLine("WARNING: attempted to renew a disposed Sponsor");
                 return TimeSpan.Zero;
             } else {
                 // Use the lease's RenewOnCallTime.
@@ -128,7 +130,13 @@ namespace DynamicScriptSandbox {
             }
 
             // Remove ourselves from the lifetime service.
-            object leaseObj = mObj.GetLifetimeService();
+            object leaseObj;
+            try {
+                leaseObj = mObj.GetLifetimeService();
+            } catch (Exception ex) {
+                Console.WriteLine("WARNING: GetLifetimeService failed: " + ex.Message);
+                leaseObj = null;
+            }
             if (leaseObj is ILease) {
                 ILease lease = (ILease)leaseObj;
                 lease.Unregister(this);
@@ -137,5 +145,4 @@ namespace DynamicScriptSandbox {
             mDisposed = true;
         }
     }
-
 }

@@ -7,9 +7,8 @@ user to edit C# scripts within the program, then compile and execute them.
 The programs would be able to call specific functions in the main program,
 but would be run in a sandbox to reduce the possibility of malicious actions.
 
-I had little prior experience with most of the features exercised by this
-code, so it's entirely possible that the approach used is dumb and/or wrong.
-This is a work in progress.  Use with caution.
+This seems mostly correct, but I've had some problems with a similar
+sandboxing approach in a separate app (https://stackoverflow.com/q/52230527/294248).
 
 
 ### Overview ###
@@ -17,7 +16,7 @@ This is a work in progress.  Use with caution.
 Compiling C# source code into an Assembly is remarkably easy in .NET.  The
 trouble is that the assembly can't be unloaded, so your memory footprint
 will expand with each recompilation.  It's also harder to keep the compiled
-code from deliberately or inadvertently disrupting the main application.
+code from deliberately or inadvertently doing bad things.
 
 By placing the compiled assembly in a separate AppDomain, we create a way
 to discard the compiled code -- just unload the AppDomain -- and expand
@@ -25,13 +24,13 @@ the set of security tools.  However, we introduce a new problem relating to
 object lifetimes.
 
 The AppDomain is (effectively or actually) a separate virtual machine, with
-an independent garbage collector.  The objects in the main app's AppDomain
-don't automatically keep objects in the plugin's AppDomain from being
-discarded by the garbage collector.  The approach Microsoft used to handle
-this was to set an expiration time on objects created across an AppDomain
-boundary.  The timer resets when the object is used, but eventually it will
-be collected.  To prevent this, a "sponsor" object in the main app must
-renew the "lease".
+an independent garbage collection domain.  The objects in the main app's
+AppDomain don't automatically keep objects in the plugin's AppDomain from
+being discarded by the garbage collector.  The approach Microsoft used to
+handle this was to set an expiration time on objects created across an
+AppDomain boundary.  The timer resets when the object is used, but eventually
+it will be collected.  To prevent this, a "sponsor" object in the main app
+must renew the "lease".
 
 This project demonstrates dynamic compilation into a dedicated AppDomain with
 proper handling of lease expiration.  For example, the "script test" does
