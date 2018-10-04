@@ -10,6 +10,13 @@ but would be run in a sandbox to reduce the possibility of malicious actions.
 This seems mostly correct, but I've had some problems with a similar
 sandboxing approach in a separate app (https://stackoverflow.com/q/52230527/294248).
 
+**IMPORTANT:** .NET AppDomains are deprecated.  They are not part of the
+.NET Core implementation or .NET Standard definition.  They're only part of
+.NET Framework, which is nearing the end of its lifetime.  There does not
+appear to be a way to get equivalent behavior without using OS-specific
+mechanisms; see e.g. [this discussion](https://github.com/dotnet/coreclr/issues/642).
+While .NET Framework will be supported for many years, newer apps should
+probably stick to the newer APIs.
 
 ### Overview ###
 
