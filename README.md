@@ -8,7 +8,8 @@ The programs would be able to call specific functions in the main program,
 but would be run in a sandbox to reduce the possibility of malicious actions.
 
 This seems mostly correct, but I've had some problems with a similar
-sandboxing approach in a separate app (https://stackoverflow.com/q/52230527/294248).
+sandboxing approach in a separate app (https://stackoverflow.com/q/52230527/294248),
+especially when leases expire while the computer is asleep.
 
 **IMPORTANT:** .NET AppDomains are deprecated.  They are not part of the
 .NET Core implementation or .NET Standard definition.  They're only part of
